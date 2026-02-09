@@ -14,12 +14,15 @@ Ensure the following are installed before proceeding:
 sudo apt update && sudo apt install -y dotnet-sdk-8.0
 ```
 
-* Repository dependencies  
+* Repository dependencies
 Ensure all repositories are cloned into **the same base folder**
 ```bash
+# Clone DataStax driver (for testing DataStax version)
 git clone git@github.com:datastax/csharp-driver.git datastax-csharp-driver &
+# Clone ScyllaDB driver fork (for testing ScyllaDB version)
+git clone git@github.com:scylladb/csharp-driver.git scylladb-csharp-driver &
 git clone git@github.com:scylladb/scylla-ccm.git scylla-ccm &
-git clone git@github.com:dimakr/csharp-driver-matrix.git csharp-driver-matrix  # TODO: change to scylladb org, when the repo is landed there  
+git clone git@github.com:scylladb/csharp-driver-matrix.git csharp-driver-matrix
 wait
 ```
 
@@ -33,7 +36,7 @@ pip install -r scripts/requirements.txt
 
 ## Run tests locally
 
-### Run tests using main.py wrapper 
+### Run tests using main.py wrapper
 
 **NOTE:** The `/usr/local/bin/ccm` path to the `ccm` binary is hardcoded in the driver tests. So if the ccm binary is located
 elsewhere in the system (e.g. in a Python virtual environment), create a symlink to the expected location:
@@ -44,15 +47,25 @@ Verify that `ccm` is accessible:
 ```bash
 /usr/local/bin/ccm help
 ```
-Run driver integration tests
+Run driver integration tests for DataStax driver:
 ```bash
 python3 main.py ../datastax-csharp-driver --tests integration --versions 3.22.0 --scylla-version release:6.2
 ```
+Run driver integration tests for ScyllaDB driver fork:
+```bash
+python3 main.py ../scylladb-csharp-driver --tests integration --versions v3.22.0.2 --scylla-version release:6.2
+```
 
 ### Run tests with docker image
+For DataStax driver:
 ```bash
 export CSHARP_DRIVER_DIR=`pwd`/../datastax-csharp-driver
 ./scripts/run_test.sh python3 main.py ../datastax-csharp-driver --tests integration --versions 3.22.0 --scylla-version release:6.2
+```
+For ScyllaDB driver fork:
+```bash
+export CSHARP_DRIVER_DIR=`pwd`/../scylladb-csharp-driver
+./scripts/run_test.sh python3 main.py ../scylladb-csharp-driver --tests integration --versions 3.22.0 --scylla-version release:6.2
 ```
 
 #### Uploading docker images

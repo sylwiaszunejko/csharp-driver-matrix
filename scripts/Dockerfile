@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && dpkg -i packages-microsoft-prod.deb \
   && rm packages-microsoft-prod.deb \
   && apt-get update \
-  && apt-get install -y --no-install-recommends dotnet-sdk-8.0 \
+  && apt-get install -y --no-install-recommends dotnet-sdk-9.0 \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 RUN chmod 1777 /usr/local/bin \

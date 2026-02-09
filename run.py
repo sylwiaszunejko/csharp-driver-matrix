@@ -26,7 +26,8 @@ class Run:
 
     @cached_property
     def version_folder(self) -> Path:
-        version_pattern = re.compile(r"\d+\.\d+\.\d+$")
+        # Match both 3-part (3.22.0) and 4-part (3.22.0.2) version patterns
+        version_pattern = re.compile(r"\d+\.\d+\.\d+(\.\d+)?$")
         target_version_folder = Path(__file__).parent / "versions" / self._driver_type
         try:
             target_version = Version(self.driver_version)
@@ -47,7 +48,7 @@ class Run:
             if tag <= target_version:
                 return target_version_folder / str(tag)
 
-        raise ValueError(f"Not found directory for datastax-csharp-driver version '{self.driver_version}'")
+        raise ValueError(f"Not found directory for {self._driver_type}-csharp-driver version '{self.driver_version}'")
 
     @cached_property
     def ignore_tests(self) -> Dict[str, List[str]]:
