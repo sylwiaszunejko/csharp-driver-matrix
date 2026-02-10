@@ -169,6 +169,14 @@ class Run:
                 subprocess.call(f"{restore_cmd}", shell=True, executable="/bin/bash",
                                 env=self.environment, cwd=self._csharp_driver_git)
 
+                # For ScyllaDB driver, ensure development SNK is set up before running tests
+                if self._driver_type == "scylla":
+                    logging.info("Setting up development SNK for ScyllaDB driver")
+                    snk_cmd = "[ -f build/scylladb.snk ] || cp build/scylladb-dev.snk build/scylladb.snk"
+                    logging.info("Running the command '%s'", snk_cmd)
+                    subprocess.call(f"{snk_cmd}", shell=True, executable="/bin/bash",
+                                    env=self.environment, cwd=self._csharp_driver_git)
+
                 logging.info("Run tests for tag '%s'", test)
                 junit_logger = f'-l "junit;LogFilePath={self.junit_dir / self.junit_file}"'
                 ignore_tests = " & ".join(
