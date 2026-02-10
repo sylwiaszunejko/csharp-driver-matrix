@@ -67,7 +67,12 @@ class Run:
 
     @cached_property
     def environment(self) -> Dict:
-        return {**os.environ, "SCYLLA_VERSION": self._scylla_version}
+        env = {**os.environ, "SCYLLA_VERSION": self._scylla_version}
+        # For ScyllaDB driver: set BuildTarget to net8 to avoid requiring .NET 9 SDK
+        # ScyllaDB driver defaults to net9 when BuildTarget is not set
+        if self._driver_type == "scylla":
+            env["BuildTarget"] = "net8"
+        return env
 
     def _run_command_in_shell(self, cmd: str) -> None:
         logging.debug("Execute the cmd '%s'", cmd)
