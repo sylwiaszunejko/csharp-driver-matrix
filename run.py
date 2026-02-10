@@ -185,7 +185,7 @@ class Run:
 
                 test_cmd = (
                     f'SIMULACRON_PATH={simulacron_path} '
-                    f'dotnet test {test_config.test_project} {test_config.test_command_args} {junit_logger} '
+                    f'CCM_DISTRIBUTION=scylla dotnet test {test_config.test_project} {test_config.test_command_args} {junit_logger} '
                     f'--filter "{ignore_filter}"')
                 logging.info("Running the command '%s'", test_cmd)
                 subprocess.call(f"{test_cmd}", shell=True, executable="/bin/bash",
