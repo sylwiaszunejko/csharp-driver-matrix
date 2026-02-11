@@ -1,0 +1,13 @@
+diff --git a/src/Cassandra.IntegrationTests/TestClusterManagement/TestClusterManager.cs b/src/Cassandra.IntegrationTests/TestClusterManagement/TestClusterManager.cs
+index 5acf9490..8591dde4 100644
+--- a/src/Cassandra.IntegrationTests/TestClusterManagement/TestClusterManager.cs
++++ b/src/Cassandra.IntegrationTests/TestClusterManagement/TestClusterManager.cs
+@@ -105,7 +105,7 @@ namespace Cassandra.IntegrationTests.TestClusterManagement
+                         ScyllaVersionString);
+                     testCluster.Create(1, null);
+                     string versionString = testCluster.GetVersion(1);
+-                    _scyllaVersion = new Version(versionString);
++                    _scyllaVersion = Version.Parse(versionString.Split('-')[0]);
+                     return _scyllaVersion;
+                 }
+                 finally

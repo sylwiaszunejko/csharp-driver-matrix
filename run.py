@@ -26,7 +26,8 @@ class Run:
 
     @cached_property
     def version_folder(self) -> Path:
-        version_pattern = re.compile(r"\d+\.\d+\.\d+$")
+        # Match both 3-part (3.22.0) and 4-part (3.22.0.2) version patterns
+        version_pattern = re.compile(r"\d+\.\d+\.\d+(\.\d+)?$")
         target_version_folder = Path(__file__).parent / "versions" / self._driver_type
         try:
             target_version = Version(self.driver_version)
@@ -47,7 +48,7 @@ class Run:
             if tag <= target_version:
                 return target_version_folder / str(tag)
 
-        raise ValueError(f"Not found directory for datastax-csharp-driver version '{self.driver_version}'")
+        raise ValueError(f"Not found directory for {self._driver_type}-csharp-driver version '{self.driver_version}'")
 
     @cached_property
     def ignore_tests(self) -> Dict[str, List[str]]:
@@ -66,7 +67,12 @@ class Run:
 
     @cached_property
     def environment(self) -> Dict:
-        return {**os.environ, "SCYLLA_VERSION": self._scylla_version}
+        env = {**os.environ, "SCYLLA_VERSION": self._scylla_version}
+        # For ScyllaDB driver: set BuildTarget to net8 to avoid requiring .NET 9 SDK
+        # ScyllaDB driver defaults to net9 when BuildTarget is not set
+        if self._driver_type == "scylla":
+            env["BuildTarget"] = "net8"
+        return env
 
     def _run_command_in_shell(self, cmd: str) -> None:
         logging.debug("Execute the cmd '%s'", cmd)
@@ -163,6 +169,14 @@ class Run:
                 subprocess.call(f"{restore_cmd}", shell=True, executable="/bin/bash",
                                 env=self.environment, cwd=self._csharp_driver_git)
 
+                # For ScyllaDB driver, ensure development SNK is set up before running tests
+                if self._driver_type == "scylla":
+                    logging.info("Setting up development SNK for ScyllaDB driver")
+                    snk_cmd = "[ -f build/scylladb.snk ] || cp build/scylladb-dev.snk build/scylladb.snk"
+                    logging.info("Running the command '%s'", snk_cmd)
+                    subprocess.call(f"{snk_cmd}", shell=True, executable="/bin/bash",
+                                    env=self.environment, cwd=self._csharp_driver_git)
+
                 logging.info("Run tests for tag '%s'", test)
                 junit_logger = f'-l "junit;LogFilePath={self.junit_dir / self.junit_file}"'
                 ignore_tests = " & ".join(
@@ -171,7 +185,7 @@ class Run:
 
                 test_cmd = (
                     f'SIMULACRON_PATH={simulacron_path} '
-                    f'dotnet test {test_config.test_project} {test_config.test_command_args} {junit_logger} '
+                    f'CCM_DISTRIBUTION=scylla dotnet test {test_config.test_project} {test_config.test_command_args} {junit_logger} '
                     f'--filter "{ignore_filter}"')
                 logging.info("Running the command '%s'", test_cmd)
                 subprocess.call(f"{test_cmd}", shell=True, executable="/bin/bash",

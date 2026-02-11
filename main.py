@@ -9,6 +9,7 @@ import traceback
 
 from run import Run
 from email_sender import create_report, get_driver_origin_remote, send_mail
+import re
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,7 +62,7 @@ def main(arguments: argparse.Namespace) -> int:
     return status
 
 
-def extract_n_latest_repo_tags(repo_directory: str, latest_tags_size: int = 2) -> List[str]:
+def extract_n_latest_repo_tags(repo_directory: str, driver_type: str, latest_tags_size: int = 2) -> List[str]:
     commands = [f"cd {repo_directory}", "git checkout .", "git tag --sort=-creatordate"]
     selected_tags = {}
     ignore_tags = set()
@@ -73,7 +74,17 @@ def extract_n_latest_repo_tags(repo_directory: str, latest_tags_size: int = 2) -
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Git command failed: {e.output.decode()}") from e
 
+    # Define regex patterns based on driver type
+    if driver_type == "scylla":
+        tag_pattern = re.compile(r'^v\d+\.\d+\.\d+\.\d+$')
+    else:  # datastax
+        tag_pattern = re.compile(r'^\d+\.\d+\.\d+$')
+
     for repo_tag in lines:
+        # Filter tags based on driver type pattern
+        if not tag_pattern.match(repo_tag):
+            continue
+
         if "." in repo_tag:
             version = tuple(repo_tag.split(".", maxsplit=2)[:2])
             if version not in ignore_tags:
@@ -91,9 +102,9 @@ def extract_n_latest_repo_tags(repo_directory: str, latest_tags_size: int = 2) -
 def get_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("csharp_driver_git", help="Folder with Git repository of C# driver")
-    parser.add_argument("--versions", default="2", type=str,
+    parser.add_argument("--versions", default="1", type=str,
                         help=f"Comma-separated C# driver versions to test, or number of latest tags.\n"
-                             f"Default=2 - the last two tags.\n")
+                             f"Default=1 - the last tag.\n")
     parser.add_argument("--tests", default="integration", choices=["integration"], nargs="*", type=str,
                         help="Tests to run (default: integration)")
     parser.add_argument("--scylla-version", default=os.environ.get("SCYLLA_VERSION", None),
@@ -108,7 +119,9 @@ def get_arguments() -> argparse.Namespace:
     versions = str(arguments.versions).replace(" ", "")
     if versions.isdigit():
         arguments.versions = extract_n_latest_repo_tags(
-            repo_directory=arguments.csharp_driver_git, latest_tags_size=int(versions))
+            repo_directory=arguments.csharp_driver_git,
+            driver_type=get_driver_type(arguments.csharp_driver_git),
+            latest_tags_size=int(versions))
     else:
         arguments.versions = versions.split(",")
 
