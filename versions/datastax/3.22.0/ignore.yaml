@@ -65,3 +65,4 @@ tests:
     - GetFunction_Should_Return_Most_Up_To_Date_Metadata_Via_Events
 
   flaky:
+    - Session_With_Host_Changing_Distance

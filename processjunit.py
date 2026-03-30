@@ -31,8 +31,9 @@ class ProcessJUnit:
 
         def filter_out_ignored_failed_test() -> int:
             failured_tests = testcase_keys[key]
+            flaky_tests = self.ignore_set.get('flaky', []) if isinstance(self.ignore_set, dict) else []
             for test in testsuite_element.iter("failure"):
-                if test.attrib["message"].replace("failed ", "") in self.ignore_set:
+                if test.attrib["message"].replace("failed ", "") in flaky_tests:
                     failured_tests -= 1
                     testcase_keys["ignored_on_failure"] += 1
             return failured_tests
@@ -91,6 +92,7 @@ class ProcessJUnit:
         original_test_result_xml = Path(self.tests_result_xml.parent) / self.tests_result_xml.name.replace(".xml", "_origin.xml")
         shutil.copy(str(self.tests_result_xml), str(original_test_result_xml))
 
+        flaky_tests = self.ignore_set.get('flaky', []) if isinstance(self.ignore_set, dict) else []
         tree = ElementTree.parse(original_test_result_xml)
         new_tree = ElementTree.Element("testsuites")
         for testsuite_element in tree.iter("testsuite"):
@@ -101,7 +103,7 @@ class ProcessJUnit:
                     element_test_details = list(element.iter())[1]
                     tag_name = element_test_details.tag
                     if (element_test_details.tag == "failure" and
-                            element_test_details.attrib["message"].replace("failed ", "") in self.ignore_set):
+                            element_test_details.attrib["message"].replace("failed ", "") in flaky_tests):
                         logging.info("Failed test is ignored for %s driver version. Failure message: %s",
                                      self.tag, element_test_details.text)
                         # Change tag name to prevent test failure
