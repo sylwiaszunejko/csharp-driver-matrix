@@ -73,3 +73,6 @@ tests:
     - InsertIfNotExists_Applied_Test
     - UpdateIf_Applied_Test
     - AddOpenTelemetry_MapperAndMapperAsync_SessionRequestIsParentOfNodeRequest
+
+    # due to https://github.com/scylladb/csharp-driver/issues/56
+    - Should_Create_The_Right_Amount_Of_Connections
