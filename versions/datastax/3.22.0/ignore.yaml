@@ -66,3 +66,9 @@ tests:
 
   flaky:
     - Session_With_Host_Changing_Distance
+
+    # Scylla 2025.1 rejects LWT on tablets
+    - DeleteIf_Applied_Test
+    - InsertIfNotExists_Applied_Test
+    - UpdateIf_Applied_Test
+    - AddOpenTelemetry_MapperAndMapperAsync_SessionRequestIsParentOfNodeRequest
