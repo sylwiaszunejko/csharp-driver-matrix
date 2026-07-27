@@ -23,6 +23,19 @@ class ProcessJUnit:
     def summary_report_path(self) -> Path:
         return Path(self.tests_result_xml.parent) / f"{self.tests_result_xml.stem}_summary.xml"
 
+    @staticmethod
+    def is_matching_test_name(testcase_name, test_names) -> bool:
+        """
+        Check whether a JUnit testcase name matches one of the names listed in ignore.yaml.
+
+        Parameterized tests are reported with their arguments appended to the name
+        (e.g. "Should_Create_The_Right_Amount_Of_Connections(True)"), so a plain equality
+        check would never match the bare test name listed in ignore.yaml.
+        """
+        if not testcase_name:
+            return False
+        return any(testcase_name == name or testcase_name.startswith(f"{name}(") for name in test_names)
+
     @lru_cache(maxsize=None)
     def _create_report(self) -> None:
         def get_attribute() -> int:
@@ -33,7 +46,7 @@ class ProcessJUnit:
             failured_tests = testcase_keys[key]
             flaky_tests = self.ignore_set.get('flaky', []) if isinstance(self.ignore_set, dict) else []
             for testcase in testsuite_element.iter("testcase"):
-                if list(testcase.iter("failure")) and testcase.attrib.get("name") in flaky_tests:
+                if list(testcase.iter("failure")) and self.is_matching_test_name(testcase.attrib.get("name"), flaky_tests):
                     failured_tests -= 1
                     testcase_keys["ignored_on_failure"] += 1
             return failured_tests
@@ -111,7 +124,7 @@ class ProcessJUnit:
                 testcase_element = ElementTree.SubElement(testsuit_child, "testcase", attrib=testcase_attrib)
                 testcase_details = list(element)
                 flaky_failure = (
-                    element.attrib.get("name") in flaky_tests
+                    self.is_matching_test_name(element.attrib.get("name"), flaky_tests)
                     and any(detail.tag == "failure" for detail in testcase_details)
                 )
                 if flaky_failure:
